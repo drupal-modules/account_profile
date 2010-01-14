@@ -1,0 +1,7 @@
+; $Id$
+name = Account Profile
+description = Integration account form with content profile
+package = CCK
+core = 6.x
+dependencies[] = content
+dependencies[] = content_profile
