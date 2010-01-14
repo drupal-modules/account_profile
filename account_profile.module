@@ -43,6 +43,14 @@ function account_profile_form_alter(&$form, $form_state, $form_id) {
  */
 function account_profile_form_validate($form, &$form_state) {
   user_module_invoke('validate', $form_state['values'], $form_state['values']['_account'], $form_state['values']['_category']);
+
+  /*
+  if (what?) {
+    watchdog('security', 'Detected malicious attempt to alter protected user fields.', array(), WATCHDOG_WARNING);
+    // set this to a value type field
+    form_set_error('category', t('Detected malicious attempt to alter protected user fields.'));
+  }
+   */
 }
 
 /**
