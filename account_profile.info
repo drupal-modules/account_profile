@@ -1,6 +1,6 @@
 ; $Id$
 name = Account Profile
-description = Integration account form with content profile
+description = Integration user account form with Profile content fields
 package = CCK
 core = 6.x
 dependencies[] = content
