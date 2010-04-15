@@ -14,20 +14,33 @@
  * Implementation of hook_menu().
  */
 function account_profile_menu() { 
-  $items = array();
-  return $items;
+    $items['admin/settings/account_profile'] = array(
+        'title' => 'Account Profile',
+        'description' => t('Settings for Account Profile'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('account_profile_get_admin_form'),
+        'access arguments' => array('administer account_profile'),
+        'file' => 'account_profile.admin.inc',
+        'type' => MENU_NORMAL_ITEM,
+    );
+    return $items;
 }
 
 /**
  * Implementation of hook_form_alter().
  */
 function account_profile_form_alter(&$form, $form_state, $form_id) {
+  $profile = variable_get('account_profile_main_profile', key(content_profile_get_types('names'))); // get main profile name
   switch ($form_id) {
-    case 'profile_node_form':
+    case 'user_profile_form':
+        if (variable_get('account_profile_redirect', TRUE)) {
+            drupal_goto($_GET['q'] . "/$profile");
+        }
+    break;
+    case $profile . '_node_form':
       /* integration with account form */
-      global $user;
       module_load_include('pages.inc', 'user');
-      $account_form = user_profile_form(array(), $user);
+      $account_form = user_profile_form(array(), user_load(arg(1)));
       unset($account_form['submit'], $account_form['delete']); // remove duplicated Save button and Delete
       $form = array_merge($account_form, $form);
       $form['#validate'][] = 'account_profile_form_validate';
@@ -36,6 +49,19 @@ function account_profile_form_alter(&$form, $form_state, $form_id) {
     break;
     default:
   }
+}
+
+/**
+ * Implementation of hook_menu_alter().
+ *
+ * Remove Account tab
+ *
+ * @param $items @type{array}
+ * @return null
+ */
+function account_profile_menu_alter(&$items) {
+    $profile = variable_get('account_profile_main_profile', key(content_profile_get_types('names'))); // get main profile name
+    $items['user/%user_category/edit/' . $profile]['type'] = MENU_CALLBACK; // remove content profile tab
 }
 
 /**
