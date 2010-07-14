@@ -71,7 +71,10 @@ function account_profile_menu_alter(&$items) {
  */
 function account_profile_form_validate($form, &$form_state) {
   user_module_invoke('validate', $form_state['values'], $form_state['values']['_account'], $form_state['values']['_category']);
-
+  // validate username
+	if ($error = user_validate_name($form_state['clicked_button']['#post']['name'])) {
+		form_set_error('name', $error);
+	}  
   /*
   if (what?) {
     watchdog('security', 'Detected malicious attempt to alter protected user fields.', array(), WATCHDOG_WARNING);
@@ -85,7 +88,12 @@ function account_profile_form_validate($form, &$form_state) {
  * Submit function for the user account and profile editing form.
  */
 function account_profile_form_submit($form, &$form_state) {
+
   $account = $form_state['values']['_account'];
+	// add username
+  $username = $form_state['clicked_button']['#post']['name'];
+  $form_state['values']['name'] = $username;
+
   $category = $form_state['values']['_category'];
   unset($form_state['values']['_account'], $form_state['values']['op'], $form_state['values']['submit'], $form_state['values']['delete'], $form_state['values']['form_token'], $form_state['values']['form_id'], $form_state['values']['_category']);
   user_module_invoke('submit', $form_state['values'], $account, $category);
