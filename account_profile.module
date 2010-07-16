@@ -45,6 +45,7 @@ function account_profile_form_alter(&$form, $form_state, $form_id) {
           unset($account_form['submit'], $account_form['delete']); // remove duplicated Save button and Delete
           $form = array_merge($account_form, $form);
           $form['#validate'][] = 'account_profile_form_validate';
+          $form['#validate'][] = 'user_validate_picture';
           $form['#submit'][] = 'account_profile_form_submit';
           $form['#submit'][] = 'account_profile_user_profile_submit';
       }
