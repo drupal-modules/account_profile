@@ -36,6 +36,13 @@ function account_profile_get_admin_form() {
     '#required' => TRUE,
   );
 
+  $form['account_profile']['account_profile_edit_tab'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Disable the normal User Edit tab'),
+    '#default_value' => variable_get('account_profile_edit_tab', TRUE),
+    '#required' => TRUE,
+  );
+  
   return system_settings_form($form);
 }
 

@@ -11,8 +11,14 @@
  */
 
 /**
- * Implementation of hook_menu().
+ * Implementation of hook_perm().
+ *
+ * @return array An array of valid permissions for the account_profile module
  */
+function account_profile_perm() {
+  return array('administer account_profile');
+}
+
 function account_profile_menu() { 
     $items['admin/settings/account_profile'] = array(
         'title' => 'Account Profile',
@@ -64,7 +70,11 @@ function account_profile_form_alter(&$form, $form_state, $form_id) {
  */
 function account_profile_menu_alter(&$items) {
     $profile = variable_get('account_profile_main_profile', key(content_profile_get_types('names'))); // get main profile name
+    $disable_edit_tab = variable_get('account_profile_edit_tab', TRUE) ;
     $items['user/%user_category/edit/' . $profile]['type'] = MENU_CALLBACK; // remove content profile tab
+    if ($disable_edit_tab) {
+      $items['user/%user_category/edit']['type'] = MENU_CALLBACK;
+    }
 }
 
 /**
@@ -93,7 +103,7 @@ function account_profile_form_validate($form, &$form_state) {
 function account_profile_form_submit($form, &$form_state) {
 
   $account = $form_state['values']['_account'];
-	// add username
+  // add username
   $username = $form_state['clicked_button']['#post']['name'];
   $form_state['values']['name'] = $username;
 
