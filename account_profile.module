@@ -27,6 +27,15 @@ function account_profile_menu() {
 }
 
 /**
+ * Implementation of hook_perm().
+ *
+ * @return array An array of valid permissions for the account_profile module
+ */
+function account_profile_perm() {
+  return array('administer account_profile');
+}
+
+/**
  * Implementation of hook_form_alter().
  */
 function account_profile_form_alter(&$form, $form_state, $form_id) {
