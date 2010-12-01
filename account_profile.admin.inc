@@ -26,21 +26,18 @@ function account_profile_get_admin_form() {
     '#description' => t('Choose the main profile which should contain user fields.'),
     '#default_value' => variable_get('account_profile_main_profile', key(content_profile_get_types('names'))),
     '#options' => content_profile_get_types('names'),
-    '#required' => TRUE,
   );
 
   $form['account_profile']['account_profile_redirect'] = array(
     '#type' => 'checkbox',
     '#title' => t('Redirect on User Edit page'),
     '#default_value' => variable_get('account_profile_redirect', TRUE),
-    '#required' => TRUE,
   );
 
   $form['account_profile']['account_profile_edit_tab'] = array(
     '#type' => 'checkbox',
     '#title' => t('Disable the normal User Edit tab'),
     '#default_value' => variable_get('account_profile_edit_tab', TRUE),
-    '#required' => TRUE,
   );
   
   return system_settings_form($form);
