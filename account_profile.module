@@ -57,8 +57,15 @@ function account_profile_form_alter(&$form, $form_state, $form_id) {
     break;
     case $profile . '_node_form':
       /* integration with account form */
-      if (is_numeric(arg(1)) && $user = user_load(arg(1))) { // activate only on edit page (not on registration page)
+      if (is_numeric(arg(1)) && $user = user_load(arg(1))) { // activate only on edit page (not on registration page) 
+
           module_load_include('pages.inc', 'user');
+
+          $form['account_profile_uid'] = array(
+            '#type' => 'value',
+            '#value' => $user->uid,
+          ); 
+
           $account_form = user_profile_form(array(), $user);
           unset($account_form['submit'], $account_form['delete']); // remove duplicated Save button and Delete
           $form = array_merge($account_form, $form);
@@ -118,9 +125,9 @@ function account_profile_form_submit($form, &$form_state) {
   // add username
   $username = $form_state['clicked_button']['#post']['name'];
   $form_state['values']['name'] = (!empty($username)) ? $username : $account->name;
-
+  $form_state['values']['uid'] = $form_state['values']['account_profile_uid'];
   $category = $form_state['values']['_category'];
-  unset($form_state['values']['_account'], $form_state['values']['op'], $form_state['values']['submit'], $form_state['values']['delete'], $form_state['values']['form_token'], $form_state['values']['form_id'], $form_state['values']['_category'], $form_state['values']['uid']);
+  unset($form_state['values']['_account'], $form_state['values']['op'], $form_state['values']['submit'], $form_state['values']['delete'], $form_state['values']['form_token'], $form_state['values']['form_id'], $form_state['values']['_category']);
   user_module_invoke('submit', $form_state['values'], $account, $category);
   user_save($account, $form_state['values'], $category);
 
