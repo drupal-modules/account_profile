@@ -7,7 +7,6 @@
  *
  * @author      Rafal Wieczorek
  * @date        April 2010
- * @version     $Id$
  */
 
 /**

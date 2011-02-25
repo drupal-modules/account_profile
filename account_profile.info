@@ -1,4 +1,3 @@
-; $Id$
 name = Account Profile
 description = Integration user account form with Profile content fields
 package = CCK
