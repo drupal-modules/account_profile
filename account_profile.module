@@ -5,8 +5,7 @@
  *   Account Profile module
  *
  *
- * @developers:
- *    Rafal Wieczorek <kenorb@gmail.com>
+ * @author: Rafal Wieczorek <kenorb@gmail.com>
  */
 
 /**
@@ -56,14 +55,14 @@ function account_profile_form_alter(&$form, $form_state, $form_id) {
     break;
     case $profile . '_node_form':
       /* integration with account form */
-      if (is_numeric(arg(1)) && $user = user_load(arg(1))) { // activate only on edit page (not on registration page) 
+      if (is_numeric(arg(1)) && $user = user_load(arg(1))) { // activate only on edit page (not on registration page)
 
           module_load_include('pages.inc', 'user');
 
           $form['account_profile_uid'] = array(
             '#type' => 'value',
             '#value' => $user->uid,
-          ); 
+          );
 
           $account_form = user_profile_form(array(), $user);
           unset($account_form['submit'], $account_form['delete']); // remove duplicated Save button and Delete
@@ -119,7 +118,6 @@ function account_profile_form_validate($form, &$form_state) {
  * Submit function for the user account and profile editing form.
  */
 function account_profile_form_submit($form, &$form_state) {
-
   $account = $form_state['values']['_account'];
   // add username
   $username = $form_state['clicked_button']['#post']['name'];
@@ -128,12 +126,46 @@ function account_profile_form_submit($form, &$form_state) {
   $category = $form_state['values']['_category'];
   unset($form_state['values']['_account'], $form_state['values']['op'], $form_state['values']['submit'], $form_state['values']['delete'], $form_state['values']['form_token'], $form_state['values']['form_id'], $form_state['values']['_category']);
   user_module_invoke('submit', $form_state['values'], $account, $category);
-  user_save($account, $form_state['values'], $category);
+
+  // prevent to store all values in user->data field.
+  $account_form_state = array();
+  module_load_include('pages.inc', 'user');
+  $account_form = user_profile_form(array(), $account);
+
+  // If $form_state['values'][<element>] exists in original user profile form, give it to $account_form_state, and separate the node_form
+  foreach ($form_state['values'] as $key => $value) {
+    if (_multi_array_key_exists($key, $account_form)) {
+      $account_form_state[$key] = $form_state['values'][$key];
+    }
+  }
+  user_save($account, $account_form_state, $category);
 
   // Clear the page cache because pages can contain usernames and/or profile information:
   cache_clear_all();
-
   drupal_set_message(t('The changes have been saved.'));
   return;
+}
+
+/**
+ * Helper function to check keys in multidimensional array.
+ * @param $needle
+ * The key
+ * @param $haystack
+ * The array to check
+ * @return boolean
+ * Return TRUE, if key is exist.
+ */
+function _multi_array_key_exists($needle, $haystack) {
+  foreach ($haystack as $key=>$value) {
+    if ($needle===$key) {
+      return $key;
+    }
+    if (is_array($value)) {
+      if(_multi_array_key_exists($needle, $value)) {
+        return $key . ":" . _multi_array_key_exists($needle, $value);
+      }
+    }
+  }
+  return FALSE;
 }
 
