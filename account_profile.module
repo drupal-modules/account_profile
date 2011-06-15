@@ -55,7 +55,14 @@ function account_profile_form_alter(&$form, $form_state, $form_id) {
     break;
     case $profile . '_node_form':
       /* integration with account form */
-      if (is_numeric(arg(1)) && $user = user_load(arg(1))) { // activate only on edit page (not on registration page)
+      if (is_numeric(arg(1))) { // activate only on edit page (not on registration page)
+          // check if we are on a user account or node edit page
+          if (arg(0) == 'user') { // on account edit page
+            $user = user_load(arg(1));  
+          } elseif (arg(0) == 'node') { // on content profile node edit page
+            $node = node_load(arg(1));
+            $user = user_load($node->uid);
+          }
 
           module_load_include('pages.inc', 'user');
 
