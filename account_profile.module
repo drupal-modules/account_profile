@@ -72,6 +72,13 @@ function account_profile_form_alter(&$form, $form_state, $form_id) {
           $form['#submit'][] = 'account_profile_form_submit';
           $form['#submit'][] = 'account_profile_user_profile_submit';
       }
+      /* Integration with Notifications autosubscribe module  */ 
+      if (module_exists('notifications_autosubscribe')) {
+        // Call hook_form_alter from notifications_autosubscribe
+        // Simulating we are on the user edit form so the
+        // autosubscribe check box is included on the form
+        notifications_autosubscribe_form_alter($form, $form_state, 'user_profile_form');
+      }
     break;
     default:
   }
