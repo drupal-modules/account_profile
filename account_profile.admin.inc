@@ -38,7 +38,17 @@ function account_profile_get_admin_form() {
     '#title' => t('Disable the normal User Edit tab'),
     '#default_value' => variable_get('account_profile_edit_tab', TRUE),
   );
-  
+  $form['#submit'][] = 'account_profile_admin_form_submit';
+
   return system_settings_form($form);
+}
+
+/**
+ * Implementation of submit callback
+ */
+function account_profile_admin_form_submit($form, &$form_state) {
+  if (variable_get('account_profile_edit_tab', TRUE) != $form_state['values']['account_profile_edit_tab']) {
+    menu_rebuild();
+  }
 }
 
