@@ -6,7 +6,7 @@
  *
  *
  * @developers:
- *    Rafal Wieczorek <kenorb@gmail.com>
+ *    Rafal W <kenorb@>
  */
 /**
  * Implementation of hook_uninstall().

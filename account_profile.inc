@@ -6,6 +6,6 @@
  *
  *
  * @developers:
- *    Rafal Wieczorek <kenorb@gmail.com>
+ *    Rafal W <kenorb@>
  */
 
