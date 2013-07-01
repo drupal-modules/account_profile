@@ -1,152 +1,167 @@
 <?php
-
 /**
  * @file
- *   Account Profile module
- *
- *
- * @author: Rafal W <kenorb@>
+ * Support for profiles in account page.
  */
 
 /**
- * Implementation of hook_menu().
- */
-function account_profile_menu() {
-    $items['admin/settings/account_profile'] = array(
-        'title' => 'Account Profile',
-        'description' => t('Settings for Account Profile'),
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array('account_profile_get_admin_form'),
-        'access arguments' => array('administer account_profile'),
-        'file' => 'account_profile.admin.inc',
-        'type' => MENU_NORMAL_ITEM,
-    );
-    return $items;
-}
-
-/**
- * Implementation of hook_perm().
+ * Implements hook_menu_alter().
  *
- * @return array An array of valid permissions for the account_profile module
- */
-function account_profile_perm() {
-  return array('administer account_profile');
-}
-
-/**
- * Implementation of hook_form_alter().
- */
-function account_profile_form_alter(&$form, $form_state, $form_id) {
-  $profile = variable_get('account_profile_main_profile', key(content_profile_get_types('names'))); // get main profile name
-  switch ($form_id) {
-    case 'user_profile_form':
-        if (variable_get('account_profile_redirect', TRUE)) {
-          if (isset($_REQUEST['destination'])) {
-            $destination = $_REQUEST['destination'];
-            unset($_REQUEST['destination']);
-            drupal_goto($_GET['q'] . "/$profile", array('destination' => $destination));
-          }
-          else {
-             drupal_goto($_GET['q'] . "/$profile");
-          }
-          // header("Location: " . base_path() . $_GET['q'] . "/$profile");
-          exit;
-        }
-    break;
-    case $profile . '_node_form':
-      /* integration with account form */
-      if (is_numeric(arg(1))) { // activate only on edit page (not on registration page)
-          // check if we are on a user account or node edit page
-          if (arg(0) == 'user') { // on account edit page
-            $user = user_load(arg(1));  
-          } elseif (arg(0) == 'node') { // on content profile node edit page
-            $node = node_load(arg(1));
-            $user = user_load($node->uid);
-          }
-
-          module_load_include('pages.inc', 'user');
-
-          $form['account_profile_uid'] = array(
-            '#type' => 'value',
-            '#value' => $user->uid,
-          );
-
-          $account_form = user_profile_form(array(), $user);
-          unset($account_form['submit'], $account_form['delete']); // remove duplicated Save button and Delete
-          $form = array_merge($account_form, $form);
-          $form['account']['#tree'] = TRUE;
-          $form['#validate'][] = 'account_profile_form_validate';
-          $form['#validate'][] = 'user_validate_picture';
-          $form['#submit'][] = 'account_profile_form_submit';
-          $form['#submit'][] = 'account_profile_user_profile_submit';
-
-      }
-      /* Integration with Notifications autosubscribe module  */ 
-      if (module_exists('notifications_autosubscribe')) {
-        // Call hook_form_alter from notifications_autosubscribe
-        // Simulating we are on the user edit form so the
-        // autosubscribe check box is included on the form
-        notifications_autosubscribe_form_alter($form, $form_state, 'user_profile_form');
-      }
-    break;
-    default:
-  }
-}
-
-/**
- * Implementation of hook_menu_alter().
- *
- * Remove Account tab
- *
- * @param $items @type{array}
- * @return null
+ * Disable profile tabs if they are marked to be shown in accounts form
  */
 function account_profile_menu_alter(&$items) {
-    $profile = variable_get('account_profile_main_profile', key(content_profile_get_types('names'))); // get main profile name
-    $disable_edit_tab = variable_get('account_profile_edit_tab', TRUE) ;
-    $items['user/%user_category/edit/' . $profile]['type'] = MENU_CALLBACK; // remove content profile tab
-    if ($disable_edit_tab) {
-      $items['user/%user_category/edit']['type'] = MENU_CALLBACK;
-    }
-}
+  $types = profile2_get_types();
 
-/**
- * Validation function for the user account and profile editing form.
- */
-function account_profile_form_validate($form, &$form_state) {
-  
-  user_module_invoke('validate', $form_state['values']['account'], $form_state['values']['_account'], $form_state['values']['_category']);
-  // Validate the username when: user is editing own account and can change username; or an admin user
-  if (($GLOBALS['user']->uid == $form['#uid'] && user_access('change own username')) || user_access('administer users')) {
-    if ($error = user_validate_name($form_state['values']['account']['name'])) {
-      form_set_error('name', $error);
+  /* We disable tabs for profiles marked as to
+  be shown as part of account form.*/
+  foreach ($types as $type) {
+    // @var $type ProfileType
+    if (isset($type->data['use_one_page']) && $type->data['use_one_page']) {
+      $items['user/%user_category/edit/' . $type->type]['access callback'] = FALSE;
     }
   }
 }
 
 /**
- * Submit function for the user account and profile editing form.
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Attach selected profiles to user edit form.
  */
-function account_profile_form_submit($form, &$form_state) {
-  
-  // Prepare account data and values for user_save
-  $account = $form_state['values']['_account'];
-  $category = $form_state['values']['_category'];
+function account_profile_form_user_profile_form_alter(&$form, &$form_state) {
 
-  // prevent to store node values in user->data field.
-  $values = $form_state['values']['account'];
+  $types = profile2_get_types();
 
-  // If username has changed, update the node's name for node_save()
-  // otherwise it doesn't find the old username
-  $form_state['values']['name'] = $form_state['values']['account']['name'];
-  
-  // Save user data
-  user_module_invoke('submit', $values, $account, $category);
-  user_save($account, $values, $category);  
+  // We take care of profiles weights.
+  usort($types, 'account_profile_sort_profile_by_weight');
 
-  // Clear the page cache because pages can contain usernames and/or profile information:
-  cache_clear_all();
+  foreach ($types as $type) {
 
-  drupal_set_message(t('User Account ' . $form_state['values']['account']['name'] . ' has been updated.'));
-  return;
+    // @var $type ProfileType
+    if (isset($type->data['use_one_page']) && $type->data['use_one_page']) {
+
+      $profile = profile2_load_by_user($form['#user'], $type->type);
+
+      if (empty($profile)) {
+        $profile = profile_create(array('type' => $type->type, 'uid' => $form['#user']->uid));
+      }
+
+      if (profile2_access('edit', $profile, $form['#user'])) {
+
+        if (!isset($form_state["profiles"])) {
+          $form_state["profiles"] = array();
+        }
+
+        $form_state['profiles'][$profile->type] = $profile;
+        profile2_attach_form($form, $form_state);
+      }
+    }
+  }
+
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Alter for user_admin_settings()
+ */
+function account_profile_form_user_admin_settings_alter(&$form, &$form_state) {
+  $form['account_profile'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Profile2 one page'),
+    '#weight' => 0,
+  );
+
+  $form['account_profile']['account_profile_wrap_account'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Wrap account form in a fieldset.'),
+    '#default_value' => variable_get('account_profile_wrap_account', FALSE),
+  );
+
+  $form['account_profile']['account_profile_wrap_account_title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Fieldset title'),
+    '#default_value' => variable_get('account_profile_wrap_account_title', t("User account")),
+  );
+
+}
+
+/**
+ * Helper to sort profiles based on weight prop.
+ *
+ * @param ProfileType $a
+ *   a profile
+ * @param ProfileType $b
+ *   a profile
+ *
+ * @return bool
+ *   int
+ *
+ * Example usage:
+ * @code
+ * $types = profile2_get_types();
+ * usort($types, '_sort_profile_by_weight');
+ * @endcode
+ */
+function account_profile_sort_profile_by_weight($a, $b) {
+  return $a->weight == $b->weight ? 0 : ($a->weight > $b->weight) ? 1 : -1;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * for the profile2 type form.
+ */
+function account_profile_form_profile2_type_form_alter(&$form, &$form_state) {
+
+  $type = $form_state['profile2_type'];
+
+  $form['data']['use_one_page'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show this profile as part of user account form.'),
+    '#default_value' => !empty($type->is_new) || !empty($type->data['use_one_page']),
+  );
+  $form['data']['#tree'] = TRUE;
+}
+
+/**
+ * Implements hook_profile2_type_insert().
+ */
+function account_profile_profile2_type_insert(ProfileType $type) {
+  // Do not directly issue menu rebuilds here to avoid potentially multiple
+  // rebuilds. Instead, let menu_get_item() issue the rebuild on the next page.
+  if (!empty($type->data['use_one_page'])) {
+    variable_set('menu_rebuild_needed', TRUE);
+  }
+}
+
+/**
+ * Implements hook_profile2_type_update().
+ */
+function account_profile_profile2_type_update(ProfileType $type) {
+  // Rebuild the menu if use_one_page or the type name has been changed.
+  // @see profile2_page_profile2_type_insert()
+  if (empty($type->data['use_one_page']) != empty($type->original->data['use_one_page']) || ($type->data['use_one_page'] && $type->type != $type->original->type)) {
+    variable_set('menu_rebuild_needed', TRUE);
+  }
+}
+
+/**
+ * Implements hook_profile2_type_delete().
+ */
+function account_profile_profile2_type_delete($type) {
+  // Do not directly issue menu rebuilds here to avoid potentially multiple
+  // rebuilds. Instead, let menu_get_item() issue the rebuild on the next page.
+  if (!empty($type->data['use_one_page'])) {
+    variable_set('menu_rebuild_needed', TRUE);
+  }
+}
+
+/**
+ * Implements hook_form_profile2_form_alter().
+ */
+function account_profile_form_profile2_form_alter(&$form, &$form_state) {
+  if (variable_get('account_profile_wrap_account', FALSE)) {
+    $form["account"]["#type"] = "fieldset";
+    $form["account"]["#title"] = variable_get('account_profile_wrap_account_title', "");
+  }
 }

@@ -1,6 +1,5 @@
 name = Account Profile
-description = Integration user account form with Profile content fields
-package = CCK
-core = 6.x
-dependencies[] = content
-dependencies[] = content_profile
+description = Merges Profile2 forms into user account form.
+core = 7.x
+dependencies[] = profile2
+package = Profile2 (contrib)
