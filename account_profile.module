@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Support for profiles in account page.
@@ -7,7 +8,7 @@
 /**
  * Implements hook_menu_alter().
  *
- * Disable profile tabs if they are marked to be shown in accounts form
+ * Disable profile tabs if they are marked to be shown in accounts form.
  */
 function account_profile_menu_alter(&$items) {
   $types = profile2_get_types();
@@ -98,14 +99,15 @@ function account_profile_form_user_admin_settings_alter(&$form, &$form_state) {
  * Helper to sort profiles based on weight prop.
  *
  * @param ProfileType $a
- *   a profile
+ *   A profile type.
  * @param ProfileType $b
- *   a profile
+ *   A profile type.
  *
  * @return bool
  *   int
  *
  * Example usage:
+ *
  * @code
  * $types = profile2_get_types();
  * usort($types, '_sort_profile_by_weight');
@@ -118,7 +120,7 @@ function account_profile_sort_profile_by_weight($a, $b) {
 /**
  * Implements hook_form_FORM_ID_alter().
  *
- * for the profile2 type form.
+ * For the profile2 type form.
  */
 function account_profile_form_profile2_type_form_alter(&$form, &$form_state) {
 
