@@ -53,6 +53,12 @@ function account_profile_form_user_profile_form_alter(&$form, &$form_state) {
 
         $form_state['profiles'][$profile->type] = $profile;
         profile2_attach_form($form, $form_state);
+
+        // Wrap each profile form in a fieldset.
+        $form['profile_' . $profile->type] += array(
+          '#type' => 'fieldset',
+          '#title' => check_plain($profile->getTranslation('label')),
+        );
       }
     }
   }
